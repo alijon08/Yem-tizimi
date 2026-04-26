@@ -545,7 +545,7 @@
 
     const mahEl = document.getElementById('mah-foyda-list');
     if (!mahsulotlar.length) {
-      mahEl.innerHTML = '<div class="empty-state"><div class="icon">📊</div>Hali ma'lumot yo'q</div>';
+      mahEl.innerHTML = '<div class="empty-state"><div class="icon">📊</div>Hali malumot yoq</div>';
       return;
     }
     mahEl.innerHTML = mahsulotlar.map(mah => {
@@ -635,7 +635,7 @@
     const el = document.getElementById('log-list');
     let filtered = currentFilter === 'hammasi' ? loglar : loglar.filter(l => l.tur === currentFilter);
     if (!filtered.length) {
-      el.innerHTML = '<div class="empty-state"><div class="icon">📋</div>Hali operatsiya yo'q</div>';
+      el.innerHTML = '<div class="empty-state"><div class="icon">📋</div>Hali operatsiya yoq</div>';
       return;
     }
     el.innerHTML = filtered.map(l => `
