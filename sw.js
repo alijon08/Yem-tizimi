@@ -1,5 +1,5 @@
-const cacheName = 'yem-dokon-v1';
-const assets = ['./', './yem_dokon_pwa.html', './manifest.json'];
+const cacheName = 'yem-v3';
+const assets = ['./', './Yemdokon.html', './manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(cacheName).then(cache => cache.addAll(assets)));

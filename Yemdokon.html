@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yem Do'kon Tizimi</title>
+<!-- PWA ulanishi -->
+<link rel="manifest" href="manifest.json">
+<script>
+  if('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log("SW xatosi:", err));
+  }
+</script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Unbounded:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1107; --surface: #1a1f0a; --surface2: #232910;
+    --accent: #c8e63c; --accent2: #8faf1a; --text: #e8f0c0;
+    --muted: #6b7a3a; --danger: #e63c3c; --success: #3ce6a0;
+    --warning: #e6a83c; --border: #2e3818;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 14px; min-height: 100vh; padding-bottom: 80px; }
+  header { background: var(--surface); border-bottom: 2px solid var(--accent); padding: 16px; position: sticky; top: 0; z-index: 100; }
+  header h1 { font-family: 'Unbounded', sans-serif; font-size: 16px; color: var(--accent); letter-spacing: 1px; }
+  header p { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab { flex: 1; min-width: 70px; padding: 12px 6px; text-align: center; font-size: 10px; color: var(--muted); cursor: pointer; border: none; background: none; font-family: 'IBM Plex Mono', monospace; transition: all 0.2s; border-bottom: 2px solid transparent; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--surface2); }
+  .tab-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+  .card-title { font-family: 'Unbounded', sans-serif; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+  input, select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 10px; font-family: 'IBM Plex Mono', monospace; margin-bottom: 10px; outline: none; }
+  .btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 6px; font-family: 'Unbounded', sans-serif; font-size: 12px; cursor: pointer; }
+  .btn-primary { background: var(--accent); color: var(--bg); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 6px; font-size: 10px; width: auto; margin-top: 5px; }
+  .product-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 12px; margin-bottom: 8px; }
+  .product-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .stock-badge { background: var(--surface); border: 1px solid var(--accent); color: var(--accent); border-radius: 4px; padding: 4px 8px; font-size: 12px; }
+  .stock-badge.low { border-color: var(--danger); color: var(--danger); }
+  .log-item { border-left: 3px solid var(--border); padding: 10px; margin-bottom: 8px; background: var(--surface2); }
+  .log-item.kirish { border-left-color: var(--success); }
+  .log-item.chiqish { border-left-color: var(--danger); }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+  .stat-card.full { grid-column: 1 / -1; }
+  .stat-value { font-family: 'Unbounded', sans-serif; font-size: 16px; color: var(--accent); }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; margin-top: 5px; }
+  .alert { padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 12px; text-align: center; }
+  .alert-success { background: #0d2a1e; color: var(--success); border: 1px solid var(--success); }
+  .alert-error { background: #2a0d0d; color: var(--danger); border: 1px solid var(--danger); }
+  .unit-toggle { display: flex; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+  .unit-btn { flex: 1; padding: 10px; cursor: pointer; border: none; background: none; color: var(--muted); font-family: inherit; }
+  .unit-btn.active { background: var(--accent); color: var(--bg); font-weight: bold; }
+  .empty-state { text-align: center; color: var(--muted); padding: 30px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌾 YEM DO'KON</h1>
+  <p>Tizim yuklandi</p>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('bosh', this)"><span class="tab-icon">📊</span>Bosh</button>
+  <button class="tab" onclick="showTab('mahsulot', this)"><span class="tab-icon">📦</span>Tovar</button>
+  <button class="tab" onclick="showTab('kirim', this)"><span class="tab-icon">⬇️</span>Kirim</button>
+  <button class="tab" onclick="showTab('chiqim', this)"><span class="tab-icon">⬆️</span>Sotish</button>
+  <button class="tab" onclick="showTab('foyda', this)"><span class="tab-icon">💰</span>Foyda</button>
+  <button class="tab" onclick="showTab('tarix', this)"><span class="tab-icon">📋</span>Tarix</button>
+</div>
+
+<!-- SAHIFALAR -->
+<div id="tab-bosh" class="page active">
+  <div class="stats-grid" id="stats-container"></div>
+  <div class="card">
+    <div class="card-title">📦 Qoldiqlar</div>
+    <div id="bosh-qoldiq-list"></div>
+  </div>
+</div>
+
+<div id="tab-mahsulot" class="page">
+  <div class="card">
+    <div class="card-title">➕ Yangi mahsulot</div>
+    <div id="mah-alert"></div>
+    <input type="text" id="mah-nom" placeholder="Mahsulot nomi">
+    <div class="unit-toggle">
+      <button class="unit-btn active" onclick="setU('kg', this)">KG</button>
+      <button class="unit-btn" onclick="setU('qop', this)">QOP</button>
+      <button class="unit-btn" onclick="setU('ikki', this)">KG+QOP</button>
+    </div>
+    <input type="number" id="mah-qop-kg" placeholder="1 qop = necha kg?" style="display:none">
+    <button class="btn btn-primary" onclick="addM()">QO'SHISH</button>
+  </div>
+  <div id="mah-list"></div>
+</div>
+
+<div id="tab-kirim" class="page">
+  <div class="card">
+    <div class="card-title">⬇️ Kirim qilish</div>
+    <div id="kirim-alert"></div>
+    <select id="k-mah" onchange="updK()"></select>
+    <div id="k-unit-info"></div>
+    <input type="number" id="k-miqdor" placeholder="Miqdori">
+    <input type="number" id="k-narx" placeholder="Jami narxi (so'm)">
+    <input type="date" id="k-sana">
+    <button class="btn btn-primary" onclick="doK()">KIRIM QILISH</button>
+  </div>
+</div>
+
+<div id="tab-chiqim" class="page">
+  <div class="card">
+    <div class="card-title">⬆️ Sotish</div>
+    <div id="sotuv-alert"></div>
+    <select id="s-mah" onchange="updS()"></select>
+    <div id="s-unit-info"></div>
+    <input type="number" id="s-miqdor" placeholder="Miqdori">
+    <input type="number" id="s-narx" placeholder="Sotuv narxi (so'm)">
+    <input type="date" id="s-sana">
+    <button class="btn btn-primary" onclick="doS()">SOTISH</button>
+  </div>
+</div>
+
+<div id="tab-foyda" class="page"><div id="foyda-content"></div></div>
+<div id="tab-tarix" class="page"><div id="log-list"></div></div>
+
+<script>
+  let DB = JSON.parse(localStorage.getItem('yem_v3')) || { m: [], l: [] };
+  let curU = 'kg';
+
+  function save() { localStorage.setItem('yem_v3', JSON.stringify(DB)); }
+
+  function showTab(id, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+    if(id === 'bosh') renBosh();
+    if(id === 'mahsulot') renM();
+    if(id === 'kirim') fillS('k-mah');
+    if(id === 'chiqim') fillS('s-mah');
+    if(id === 'foyda') renF();
+    if(id === 'tarix') renL();
+  }
+
+  function setU(u, b) {
+    curU = u;
+    document.querySelectorAll('.unit-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('mah-qop-kg').style.display = (u === 'kg') ? 'none' : 'block';
+  }
+
+  function addM() {
+    const n = document.getElementById('mah-nom').value.trim();
+    const qk = parseFloat(document.getElementById('mah-qop-kg').value) || 0;
+    if(!n) return;
+    DB.m.push({ id: Date.now(), n, u: curU, qk, qoldiq: 0 });
+    save(); renM();
+    document.getElementById('mah-nom').value = '';
+  }
+
+  function fillS(id) {
+    const s = document.getElementById(id);
+    if (!s) return;
+    s.innerHTML = '<option value="">— Mahsulot tanlang —</option>' + 
+      DB.m.map(x => `<option value="${x.id}">${x.n}</option>`).join('');
+    const kSana = document.getElementById('k-sana');
+    const sSana = document.getElementById('s-sana');
+    if (kSana) kSana.valueAsDate = new Date();
+    if (sSana) sSana.valueAsDate = new Date();
+  }
+
+  function doK() {
+    const mid = document.getElementById('k-mah').value;
+    const miq = parseFloat(document.getElementById('k-miqdor').value);
+    const narx = parseFloat(document.getElementById('k-narx').value) || 0;
+    if(!mid || !miq) return;
+    const mah = DB.m.find(x => x.id == mid);
+    mah.qoldiq += (mah.u === 'kg') ? miq : (miq * mah.qk);
+    DB.l.unshift({ t: 'k', m: mah.n, q: miq, n: narx, d: document.getElementById('k-sana').value });
+    save(); alert('Kirim qilindi'); renBosh(); showTab('bosh', document.querySelectorAll('.tab')[0]);
+  }
+
+  function doS() {
+    const mid = document.getElementById('s-mah').value;
+    const miq = parseFloat(document.getElementById('s-miqdor').value);
+    const narx = parseFloat(document.getElementById('s-narx').value) || 0;
+    if(!mid || !miq) return;
+    const mah = DB.m.find(x => x.id == mid);
+    const totalKg = (mah.u === 'kg') ? miq : (miq * mah.qk);
+    if(mah.qoldiq < totalKg) return alert('Omborda yetarli emas!');
+    mah.qoldiq -= totalKg;
+    DB.l.unshift({ t: 's', m: mah.n, q: miq, n: narx, d: document.getElementById('s-sana').value });
+    save(); alert('Sotildi'); renBosh(); showTab('bosh', document.querySelectorAll('.tab')[0]);
+  }
+
+  function renBosh() {
+    const xarajat = DB.l.filter(x => x.t === 'k').reduce((a, b) => a + b.n, 0);
+    const tushum = DB.l.filter(x => x.t === 's').reduce((a, b) => a + b.n, 0);
+    const statsContainer = document.getElementById('stats-container');
+    if (statsContainer) {
+        statsContainer.innerHTML = `
+          <div class="stat-card"><div class="stat-value">${DB.m.length}</div><div class="stat-label">Turlar</div></div>
+          <div class="stat-card"><div class="stat-value">${DB.l.length}</div><div class="stat-label">Ishlar</div></div>
+          <div class="stat-card full"><div class="stat-value" style="color:${tushum >= xarajat ? '#3ce6a0' : '#e63c3c'}">${(tushum - xarajat).toLocaleString()} so'm</div><div class="stat-label">Umumiy Foyda</div></div>
+        `;
+    }
+    const qoldiqList = document.getElementById('bosh-qoldiq-list');
+    if (qoldiqList) {
+        qoldiqList.innerHTML = DB.m.map(x => `
+          <div class="product-item"><b>${x.n}</b>: ${x.qoldiq.toFixed(1)} kg</div>
+        `).join('') || '<div class="empty-state">Hali mahsulot yo\'q</div>';
+    }
+  }
+
+  function renM() {
+    const mahList = document.getElementById('mah-list');
+    if (mahList) {
+        mahList.innerHTML = DB.m.map(x => `
+          <div class="product-item"><b>${x.n}</b> (${x.u}) <button class="btn-danger" onclick="delM(${x.id})">O'chirish</button></div>
+        `).join('') || '<div class="empty-state">Hali mahsulot yo\'q</div>';
+    }
+  }
+  function delM(id) { if(confirm('Ochirish?')) { DB.m = DB.m.filter(x => x.id != id); save(); renM(); } }
+
+  function renL() {
+    const logList = document.getElementById('log-list');
+    if (logList) {
+        logList.innerHTML = DB.l.map(x => `
+          <div class="log-item ${x.t === 'k' ? 'kirish' : 'chiqish'}">
+            <b>${x.t === 'k' ? '⬇ KIRIM' : '⬆ SOTUV'}</b>: ${x.m} | ${x.q} dona/kg | ${x.n.toLocaleString()} so'm <br> <small>${x.d}</small>
+          </div>
+        `).join('') || '<div class="empty-state">Hali operatsiya yo\'q</div>';
+    }
+  }
+
+  function renF() {
+    const x = DB.l.filter(x => x.t === 'k').reduce((a, b) => a + b.n, 0);
+    const t = DB.l.filter(x => x.t === 's').reduce((a, b) => a + b.n, 0);
+    const foydaContent = document.getElementById('foyda-content');
+    if (foydaContent) {
+        foydaContent.innerHTML = `
+          <div class="card"><h3>Xarajat: ${x.toLocaleString()} so'm</h3><h3>Tushum: ${t.toLocaleString()} so'm</h3><hr><h2>Foyda: ${(t-x).toLocaleString()} so'm</h2></div>
+        `;
+    }
+  }
+
+  window.onload = renBosh;
+</script>
+</body>
+</html>
