@@ -217,7 +217,7 @@
   <div class="card">
     <div class="card-title">📦 Qoldiqlar</div>
     <div id="bosh-qoldiq-list">
-      <div class="empty-state"><div class="icon">🌿</div>Hali mahsulot yo'q</div>
+      <div class="empty-state"><div class="icon">🌿</div>Hali mahsulot yoq</div>
     </div>
   </div>
 </div>
@@ -229,7 +229,7 @@
     <div id="mahsulot-alert"></div>
     <label>Mahsulot nomi</label>
     <input type="text" id="mah-nom" placeholder="Masalan: Sigir yemi №1">
-    <label>O'lchov birligi</label>
+    <label>Olchov birligi</label>
     <div class="unit-toggle">
       <button class="unit-btn active" id="unit-kg" onclick="selectUnit('kg')">KG</button>
       <button class="unit-btn" id="unit-qop" onclick="selectUnit('qop')">QOP</button>
@@ -242,9 +242,9 @@
     <button class="btn btn-primary" onclick="mahsulotQosh()">QO'SHISH</button>
   </div>
   <hr class="divider">
-  <div class="section-title">Mahsulotlar ro'yxati</div>
+  <div class="section-title">Mahsulotlar royxati</div>
   <div id="mahsulot-list">
-    <div class="empty-state"><div class="icon">📭</div>Hali mahsulot yo'q</div>
+    <div class="empty-state"><div class="icon">📭</div>Hali mahsulot yoq</div>
   </div>
 </div>
 
@@ -260,7 +260,7 @@
     <div id="kirim-unit-row"></div>
     <label>Miqdor</label>
     <input type="number" id="kirim-miqdor" placeholder="0" min="0" step="0.1">
-    <label>💸 Jami sotib olish narxi (so'm)</label>
+    <label>💸 Jami sotib olish narxi (som)</label>
     <input type="number" id="kirim-narx" placeholder="Masalan: 500000" min="0">
     <label>Sana</label>
     <input type="date" id="kirim-sana">
@@ -282,7 +282,7 @@
     <div id="chiqim-unit-row"></div>
     <label>Miqdor</label>
     <input type="number" id="chiqim-miqdor" placeholder="0" min="0" step="0.1">
-    <label>💰 Jami sotuv narxi (so'm)</label>
+    <label>💰 Jami sotuv narxi (som)</label>
     <input type="number" id="chiqim-narx" placeholder="Masalan: 650000" min="0">
     <label>Sana</label>
     <input type="date" id="chiqim-sana">
@@ -320,9 +320,9 @@
       </div>
     </div>
   </div>
-  <div class="section-title">📦 Mahsulot bo'yicha foyda</div>
+  <div class="section-title">📦 Mahsulot boyicha foyda</div>
   <div id="mah-foyda-list">
-    <div class="empty-state"><div class="icon">📊</div>Hali ma'lumot yo'q</div>
+    <div class="empty-state"><div class="icon">📊</div>Hali malumot yoq</div>
   </div>
 </div>
 
@@ -334,7 +334,7 @@
     <button class="filter-btn" onclick="filterLog('chiqish', this)">Sotish</button>
   </div>
   <div id="log-list">
-    <div class="empty-state"><div class="icon">📋</div>Hali operatsiya yo'q</div>
+    <div class="empty-state"><div class="icon">📋</div>Hali operatsiya yoq</div>
   </div>
 </div>
 
@@ -412,12 +412,12 @@
     save('mahsulotlar', mahsulotlar);
     document.getElementById('mah-nom').value = '';
     document.getElementById('mah-qop-kg').value = '';
-    showAlert('mahsulot-alert', nom + ' qo'shildi ✅', 'success');
+    showAlert('mahsulot-alert', nom + ' qoshildi ✅', 'success');
     renderMahsulotlar();
   }
 
   function mahsulotOchir(id) {
-    if (!confirm('O'chirilsinmi?')) return;
+    if (!confirm('Ochirilsinmi?')) return;
     mahsulotlar = mahsulotlar.filter(m => m.id !== id);
     loglar = loglar.filter(l => l.mahId !== id);
     save('mahsulotlar', mahsulotlar);
@@ -433,7 +433,7 @@
     if (!mah || mah.unit === 'kg') { el.innerHTML = ''; return; }
     if (mah.unit === 'qop') { el.innerHTML = `<p style="color:var(--muted);font-size:12px;margin-bottom:10px">📦 QOP (1 qop = ${mah.qopKg} kg)</p>`; return; }
     if (mah.unit === 'ikki') {
-      el.innerHTML = `<label>O'lchov birligi</label><select id="kirim-unit-sel"><option value="kg">KG</option><option value="qop">QOP (1 qop = ${mah.qopKg} kg)</option></select>`;
+      el.innerHTML = `<label>Olchov birligi</label><select id="kirim-unit-sel"><option value="kg">KG</option><option value="qop">QOP (1 qop = ${mah.qopKg} kg)</option></select>`;
     }
   }
 
@@ -444,7 +444,7 @@
     if (!mah || mah.unit === 'kg') { el.innerHTML = ''; return; }
     if (mah.unit === 'qop') { el.innerHTML = `<p style="color:var(--muted);font-size:12px;margin-bottom:10px">📦 QOP (1 qop = ${mah.qopKg} kg)</p>`; return; }
     if (mah.unit === 'ikki') {
-      el.innerHTML = `<label>O'lchov birligi</label><select id="chiqim-unit-sel"><option value="kg">KG</option><option value="qop">QOP (1 qop = ${mah.qopKg} kg)</option></select>`;
+      el.innerHTML = `<label>Olchov birligi</label><select id="chiqim-unit-sel"><option value="kg">KG</option><option value="qop">QOP (1 qop = ${mah.qopKg} kg)</option></select>`;
     }
   }
 
@@ -489,7 +489,7 @@
     const mah = mahsulotlar.find(m => m.id == mahId);
     const { unit, mult } = getUnitKg(mah, 'chiqim');
     const kgMiqdor = miqdor * mult;
-    if (mah.qoldiq < kgMiqdor) { showAlert('chiqim-alert', `Omborda yetarli yo'q! Qoldiq: ${fmt(mah.qoldiq, mah)}`, 'error'); return; }
+    if (mah.qoldiq < kgMiqdor) { showAlert('chiqim-alert', `Omborda yetarli yoq! Qoldiq: ${fmt(mah.qoldiq, mah)}`, 'error'); return; }
     mah.qoldiq -= kgMiqdor;
     save('mahsulotlar', mahsulotlar);
     loglar.unshift({ id: Date.now(), mahId: mah.id, mahNom: mah.nom, tur: 'chiqish', miqdor, unit, kgMiqdor, narx, sana, izoh });
@@ -612,7 +612,7 @@
   function renderMahsulotlar() {
     const el = document.getElementById('mahsulot-list');
     if (!mahsulotlar.length) {
-      el.innerHTML = '<div class="empty-state"><div class="icon">📭</div>Hali mahsulot yo'q</div>';
+      el.innerHTML = '<div class="empty-state"><div class="icon">📭</div>Hali mahsulot yoq</div>';
       return;
     }
     el.innerHTML = mahsulotlar.map(m => `
