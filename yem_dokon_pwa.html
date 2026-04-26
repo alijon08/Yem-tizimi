@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yem Do'kon Tizimi</title>
+<link rel="manifest" href="manifest.json">
+<script>
+  if('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Unbounded:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1107;
+    --surface: #1a1f0a;
+    --surface2: #232910;
+    --accent: #c8e63c;
+    --accent2: #8faf1a;
+    --text: #e8f0c0;
+    --muted: #6b7a3a;
+    --danger: #e63c3c;
+    --success: #3ce6a0;
+    --warning: #e6a83c;
+    --border: #2e3818;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+  header {
+    background: var(--surface);
+    border-bottom: 2px solid var(--accent);
+    padding: 16px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  header h1 { font-family: 'Unbounded', sans-serif; font-size: 16px; color: var(--accent); letter-spacing: 1px; }
+  header p { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .tabs {
+    display: flex; background: var(--surface);
+    border-bottom: 1px solid var(--border); overflow-x: auto;
+  }
+  .tab {
+    flex: 1; min-width: 60px; padding: 10px 6px; text-align: center;
+    font-size: 10px; color: var(--muted); cursor: pointer;
+    border: none; background: none; font-family: 'IBM Plex Mono', monospace;
+    transition: all 0.2s; border-bottom: 2px solid transparent; white-space: nowrap;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--surface2); }
+  .tab-icon { font-size: 16px; display: block; margin-bottom: 2px; }
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px; margin-bottom: 12px;
+  }
+  .card-title {
+    font-family: 'Unbounded', sans-serif; font-size: 11px;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px;
+  }
+  input, select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); padding: 10px 12px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+    margin-bottom: 10px; outline: none; transition: border-color 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  select option { background: var(--surface2); }
+  label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .btn {
+    display: block; width: 100%; padding: 12px; border: none; border-radius: 6px;
+    font-family: 'Unbounded', sans-serif; font-size: 12px; cursor: pointer;
+    transition: all 0.2s; letter-spacing: 0.5px;
+  }
+  .btn-primary { background: var(--accent); color: var(--bg); }
+  .btn-primary:active { transform: scale(0.98); background: var(--accent2); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 6px 10px; width: auto; font-size: 11px; }
+  .product-item {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px; margin-bottom: 8px;
+  }
+  .product-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .product-name { font-weight: 600; color: var(--text); font-size: 13px; }
+  .product-stock { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .stock-badge {
+    background: var(--surface); border: 1px solid var(--accent);
+    color: var(--accent); border-radius: 4px; padding: 4px 8px;
+    font-size: 12px; font-weight: 600; text-align: right; white-space: nowrap;
+  }
+  .stock-badge.low { border-color: var(--danger); color: var(--danger); }
+  .log-item {
+    border-left: 3px solid var(--border); padding: 10px 12px;
+    margin-bottom: 8px; background: var(--surface2); border-radius: 0 6px 6px 0;
+  }
+  .log-item.kirish { border-left-color: var(--success); }
+  .log-item.chiqish { border-left-color: var(--danger); }
+  .log-type { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  .log-type.kirish { color: var(--success); }
+  .log-type.chiqish { color: var(--danger); }
+  .log-detail { font-size: 13px; color: var(--text); margin: 2px 0; }
+  .log-price { font-size: 12px; color: var(--warning); }
+  .log-date { font-size: 11px; color: var(--muted); }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stat-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px; text-align: center;
+  }
+  .stat-card.full { grid-column: 1 / -1; }
+  .stat-value { font-family: 'Unbounded', sans-serif; font-size: 16px; color: var(--accent); margin-bottom: 4px; word-break: break-all; }
+  .stat-value.profit { color: var(--success); }
+  .stat-value.loss { color: var(--danger); }
+  .stat-value.warning { color: var(--warning); }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+  .empty-state { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 13px; }
+  .empty-state .icon { font-size: 40px; margin-bottom: 10px; }
+  .alert { padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; font-size: 12px; }
+  .alert-success { background: #0d2a1e; border: 1px solid var(--success); color: var(--success); }
+  .alert-error { background: #2a0d0d; border: 1px solid var(--danger); color: var(--danger); }
+  .filter-row { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; }
+  .filter-btn {
+    padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);
+    background: none; color: var(--muted); font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; cursor: pointer; white-space: nowrap;
+  }
+  .filter-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+  .section-title { font-family: 'Unbounded', sans-serif; font-size: 12px; color: var(--accent); margin-bottom: 12px; }
+  .unit-toggle {
+    display: flex; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; overflow: hidden; margin-bottom: 10px;
+  }
+  .unit-btn {
+    flex: 1; padding: 8px; text-align: center; cursor: pointer; font-size: 12px;
+    color: var(--muted); border: none; background: none;
+    font-family: 'IBM Plex Mono', monospace; transition: all 0.2s;
+  }
+  .unit-btn.active { background: var(--accent); color: var(--bg); font-weight: 600; }
+  .period-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; }
+  .period-tab {
+    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: none; color: var(--muted); font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace; cursor: pointer; white-space: nowrap;
+  }
+  .period-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+  .mah-foyda-item {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px; margin-bottom: 8px;
+  }
+  .mah-foyda-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .foyda-badge {
+    font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 700;
+    padding: 4px 8px; border-radius: 4px; white-space: nowrap;
+  }
+  .foyda-badge.plus { color: var(--success); background: #0d2a1e; border: 1px solid var(--success); }
+  .foyda-badge.minus { color: var(--danger); background: #2a0d0d; border: 1px solid var(--danger); }
+  .foyda-badge.zero { color: var(--muted); background: var(--surface); border: 1px solid var(--border); }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌾 YEM DO'KON</h1>
+  <p>Ombor va moliya tizimi</p>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('bosh', this)">
+    <span class="tab-icon">📊</span>Bosh
+  </button>
+  <button class="tab" onclick="showTab('mahsulot', this)">
+    <span class="tab-icon">📦</span>Tovar
+  </button>
+  <button class="tab" onclick="showTab('kirim', this)">
+    <span class="tab-icon">⬇️</span>Kirim
+  </button>
+  <button class="tab" onclick="showTab('chiqim', this)">
+    <span class="tab-icon">⬆️</span>Sotish
+  </button>
+  <button class="tab" onclick="showTab('foyda', this)">
+    <span class="tab-icon">💰</span>Foyda
+  </button>
+  <button class="tab" onclick="showTab('tarix', this)">
+    <span class="tab-icon">📋</span>Tarix
+  </button>
+</div>
+
+<!-- BOSh -->
+<div id="tab-bosh" class="page active">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value" id="stat-mahsulot">0</div>
+      <div class="stat-label">Mahsulot turi</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-operatsiya">0</div>
+      <div class="stat-label">Operatsiyalar</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value warning" id="stat-xarajat">0</div>
+      <div class="stat-label">Jami xarajat</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-tushum">0</div>
+      <div class="stat-label">Jami tushum</div>
+    </div>
+    <div class="stat-card full">
+      <div class="stat-value" id="stat-foyda">0</div>
+      <div class="stat-label" id="stat-foyda-label">Foyda / Zarar</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="bosh-progress" style="width:0%;background:var(--success)"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📦 Qoldiqlar</div>
+    <div id="bosh-qoldiq-list">
+      <div class="empty-state"><div class="icon">🌿</div>Hali mahsulot yo'q</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAHSULOT -->
+<div id="tab-mahsulot" class="page">
+  <div class="card">
+    <div class="card-title">➕ Yangi mahsulot</div>
+    <div id="mahsulot-alert"></div>
+    <label>Mahsulot nomi</label>
+    <input type="text" id="mah-nom" placeholder="Masalan: Sigir yemi №1">
+    <label>O'lchov birligi</label>
+    <div class="unit-toggle">
+      <button class="unit-btn active" id="unit-kg" onclick="selectUnit('kg')">KG</button>
+      <button class="unit-btn" id="unit-qop" onclick="selectUnit('qop')">QOP</button>
+      <button class="unit-btn" id="unit-ikki" onclick="selectUnit('ikki')">KG+QOP</button>
+    </div>
+    <div id="qop-kg-field" style="display:none">
+      <label>1 qop = necha kg?</label>
+      <input type="number" id="mah-qop-kg" placeholder="Masalan: 25">
+    </div>
+    <button class="btn btn-primary" onclick="mahsulotQosh()">QO'SHISH</button>
+  </div>
+  <hr class="divider">
+  <div class="section-title">Mahsulotlar ro'yxati</div>
+  <div id="mahsulot-list">
+    <div class="empty-state"><div class="icon">📭</div>Hali mahsulot yo'q</div>
+  </div>
+</div>
+
+<!-- KIRIM -->
+<div id="tab-kirim" class="page">
+  <div class="card">
+    <div class="card-title">⬇️ Tovar kirim</div>
+    <div id="kirim-alert"></div>
+    <label>Mahsulot</label>
+    <select id="kirim-mah" onchange="renderKirimUnit()">
+      <option value="">— Tanlang —</option>
+    </select>
+    <div id="kirim-unit-row"></div>
+    <label>Miqdor</label>
+    <input type="number" id="kirim-miqdor" placeholder="0" min="0" step="0.1">
+    <label>💸 Jami sotib olish narxi (so'm)</label>
+    <input type="number" id="kirim-narx" placeholder="Masalan: 500000" min="0">
+    <label>Sana</label>
+    <input type="date" id="kirim-sana">
+    <label>Izoh (ixtiyoriy)</label>
+    <input type="text" id="kirim-izoh" placeholder="Masalan: Toshkentdan keldi">
+    <button class="btn btn-primary" onclick="kirimQosh()">KIRDI ✅</button>
+  </div>
+</div>
+
+<!-- SOTISH -->
+<div id="tab-chiqim" class="page">
+  <div class="card">
+    <div class="card-title">⬆️ Sotish</div>
+    <div id="chiqim-alert"></div>
+    <label>Mahsulot</label>
+    <select id="chiqim-mah" onchange="renderChiqimUnit()">
+      <option value="">— Tanlang —</option>
+    </select>
+    <div id="chiqim-unit-row"></div>
+    <label>Miqdor</label>
+    <input type="number" id="chiqim-miqdor" placeholder="0" min="0" step="0.1">
+    <label>💰 Jami sotuv narxi (so'm)</label>
+    <input type="number" id="chiqim-narx" placeholder="Masalan: 650000" min="0">
+    <label>Sana</label>
+    <input type="date" id="chiqim-sana">
+    <label>Izoh (ixtiyoriy)</label>
+    <input type="text" id="chiqim-izoh" placeholder="Masalan: Abdullayev sotib oldi">
+    <button class="btn btn-primary" onclick="chiqimQosh()">SOTILDI ✅</button>
+  </div>
+</div>
+
+<!-- FOYDA -->
+<div id="tab-foyda" class="page">
+  <div class="period-tabs">
+    <button class="period-tab active" onclick="setPeriod('barchasi', this)">Barchasi</button>
+    <button class="period-tab" onclick="setPeriod('bugun', this)">Bugun</button>
+    <button class="period-tab" onclick="setPeriod('hafta', this)">Hafta</button>
+    <button class="period-tab" onclick="setPeriod('oy', this)">Bu oy</button>
+  </div>
+  <div class="card">
+    <div class="card-title">💰 Umumiy hisob</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value warning" id="f-xarajat">0</div>
+        <div class="stat-label">Xarajat</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value profit" id="f-tushum">0</div>
+        <div class="stat-label">Tushum</div>
+      </div>
+      <div class="stat-card full">
+        <div class="stat-value" id="f-foyda">0</div>
+        <div class="stat-label" id="f-foyda-label">Foyda / Zarar</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="f-progress" style="width:0%;background:var(--success)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="section-title">📦 Mahsulot bo'yicha foyda</div>
+  <div id="mah-foyda-list">
+    <div class="empty-state"><div class="icon">📊</div>Hali ma'lumot yo'q</div>
+  </div>
+</div>
+
+<!-- TARIX -->
+<div id="tab-tarix" class="page">
+  <div class="filter-row">
+    <button class="filter-btn active" onclick="filterLog('hammasi', this)">Hammasi</button>
+    <button class="filter-btn" onclick="filterLog('kirish', this)">Kirim</button>
+    <button class="filter-btn" onclick="filterLog('chiqish', this)">Sotish</button>
+  </div>
+  <div id="log-list">
+    <div class="empty-state"><div class="icon">📋</div>Hali operatsiya yo'q</div>
+  </div>
+</div>
+
+<script>
+  let selectedUnit = 'kg';
+  let currentFilter = 'hammasi';
+  let currentPeriod = 'barchasi';
+
+  function save(key, val) {
+    try { localStorage.setItem('yem2_' + key, JSON.stringify(val)); } catch(e) {}
+  }
+  function load(key, def) {
+    try { const v = localStorage.getItem('yem2_' + key); return v ? JSON.parse(v) : def; }
+    catch(e) { return def; }
+  }
+
+  let mahsulotlar = load('mahsulotlar', []);
+  let loglar = load('loglar', []);
+
+  function fmtSum(n) {
+    if (!n || n === 0) return '0';
+    if (n >= 1000000) return (n/1000000).toFixed(1) + ' mln';
+    if (n >= 1000) return Math.round(n/1000) + ' ming';
+    return Math.round(n) + '';
+  }
+
+  function fmt(kgMiqdor, mah) {
+    if (!mah) return kgMiqdor.toFixed(1) + ' kg';
+    if (mah.unit === 'kg') return kgMiqdor.toFixed(1) + ' kg';
+    if (mah.unit === 'qop') return (kgMiqdor / mah.qopKg).toFixed(1) + ' qop';
+    if (mah.unit === 'ikki') {
+      const qop = Math.floor(kgMiqdor / mah.qopKg);
+      const kg = kgMiqdor % mah.qopKg;
+      if (qop === 0) return kg.toFixed(1) + ' kg';
+      if (kg < 0.05) return qop + ' qop';
+      return qop + ' qop ' + kg.toFixed(1) + ' kg';
+    }
+    return kgMiqdor.toFixed(1) + ' kg';
+  }
+
+  function showTab(id, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    if (el) el.classList.add('active');
+    if (id === 'bosh') renderBosh();
+    if (id === 'mahsulot') renderMahsulotlar();
+    if (id === 'kirim') { fillSelect('kirim-mah'); setToday('kirim-sana'); renderKirimUnit(); }
+    if (id === 'chiqim') { fillSelect('chiqim-mah'); setToday('chiqim-sana'); renderChiqimUnit(); }
+    if (id === 'foyda') renderFoyda();
+    if (id === 'tarix') renderLog();
+  }
+
+  function setToday(id) {
+    document.getElementById(id).value = new Date().toISOString().split('T')[0];
+  }
+
+  function selectUnit(u) {
+    selectedUnit = u;
+    ['kg','qop','ikki'].forEach(x => document.getElementById('unit-' + x).classList.remove('active'));
+    document.getElementById('unit-' + u).classList.add('active');
+    document.getElementById('qop-kg-field').style.display = (u === 'qop' || u === 'ikki') ? 'block' : 'none';
+  }
+
+  function mahsulotQosh() {
+    const nom = document.getElementById('mah-nom').value.trim();
+    if (!nom) { showAlert('mahsulot-alert', 'Mahsulot nomini kiriting!', 'error'); return; }
+    if (mahsulotlar.find(m => m.nom === nom)) { showAlert('mahsulot-alert', 'Bu nom allaqachon bor!', 'error'); return; }
+    let qopKg = null;
+    if (selectedUnit === 'qop' || selectedUnit === 'ikki') {
+      qopKg = parseFloat(document.getElementById('mah-qop-kg').value);
+      if (!qopKg || qopKg <= 0) { showAlert('mahsulot-alert', '1 qop necha kg? kiriting!', 'error'); return; }
+    }
+    mahsulotlar.push({ id: Date.now(), nom, unit: selectedUnit, qopKg, qoldiq: 0 });
+    save('mahsulotlar', mahsulotlar);
+    document.getElementById('mah-nom').value = '';
+    document.getElementById('mah-qop-kg').value = '';
+    showAlert('mahsulot-alert', nom + ' qo'shildi ✅', 'success');
+    renderMahsulotlar();
+  }
+
+  function mahsulotOchir(id) {
+    if (!confirm('O'chirilsinmi?')) return;
+    mahsulotlar = mahsulotlar.filter(m => m.id !== id);
+    loglar = loglar.filter(l => l.mahId !== id);
+    save('mahsulotlar', mahsulotlar);
+    save('loglar', loglar);
+    renderMahsulotlar();
+    renderBosh();
+  }
+
+  function renderKirimUnit() {
+    const id = document.getElementById('kirim-mah').value;
+    const mah = mahsulotlar.find(m => m.id == id);
+    const el = document.getElementById('kirim-unit-row');
+    if (!mah || mah.unit === 'kg') { el.innerHTML = ''; return; }
+    if (mah.unit === 'qop') { el.innerHTML = `<p style="color:var(--muted);font-size:12px;margin-bottom:10px">📦 QOP (1 qop = ${mah.qopKg} kg)</p>`; return; }
+    if (mah.unit === 'ikki') {
+      el.innerHTML = `<label>O'lchov birligi</label><select id="kirim-unit-sel"><option value="kg">KG</option><option value="qop">QOP (1 qop = ${mah.qopKg} kg)</option></select>`;
+    }
+  }
+
+  function renderChiqimUnit() {
+    const id = document.getElementById('chiqim-mah').value;
+    const mah = mahsulotlar.find(m => m.id == id);
+    const el = document.getElementById('chiqim-unit-row');
+    if (!mah || mah.unit === 'kg') { el.innerHTML = ''; return; }
+    if (mah.unit === 'qop') { el.innerHTML = `<p style="color:var(--muted);font-size:12px;margin-bottom:10px">📦 QOP (1 qop = ${mah.qopKg} kg)</p>`; return; }
+    if (mah.unit === 'ikki') {
+      el.innerHTML = `<label>O'lchov birligi</label><select id="chiqim-unit-sel"><option value="kg">KG</option><option value="qop">QOP (1 qop = ${mah.qopKg} kg)</option></select>`;
+    }
+  }
+
+  function getUnitKg(mah, type) {
+    const sel = document.getElementById(type + '-unit-sel');
+    if (mah.unit === 'kg') return { unit: 'kg', mult: 1 };
+    if (mah.unit === 'qop') return { unit: 'qop', mult: mah.qopKg };
+    if (sel) return sel.value === 'qop' ? { unit: 'qop', mult: mah.qopKg } : { unit: 'kg', mult: 1 };
+    return { unit: 'kg', mult: 1 };
+  }
+
+  function kirimQosh() {
+    const mahId = document.getElementById('kirim-mah').value;
+    const miqdor = parseFloat(document.getElementById('kirim-miqdor').value);
+    const narx = parseFloat(document.getElementById('kirim-narx').value) || 0;
+    const sana = document.getElementById('kirim-sana').value;
+    const izoh = document.getElementById('kirim-izoh').value.trim();
+    if (!mahId) { showAlert('kirim-alert', 'Mahsulot tanlang!', 'error'); return; }
+    if (!miqdor || miqdor <= 0) { showAlert('kirim-alert', 'Miqdor kiriting!', 'error'); return; }
+    const mah = mahsulotlar.find(m => m.id == mahId);
+    const { unit, mult } = getUnitKg(mah, 'kirim');
+    const kgMiqdor = miqdor * mult;
+    mah.qoldiq += kgMiqdor;
+    save('mahsulotlar', mahsulotlar);
+    loglar.unshift({ id: Date.now(), mahId: mah.id, mahNom: mah.nom, tur: 'kirish', miqdor, unit, kgMiqdor, narx, sana, izoh });
+    save('loglar', loglar);
+    document.getElementById('kirim-miqdor').value = '';
+    document.getElementById('kirim-narx').value = '';
+    document.getElementById('kirim-izoh').value = '';
+    showAlert('kirim-alert', `${miqdor} ${unit} kirim | ${fmtSum(narx)} so'm ✅`, 'success');
+    renderBosh();
+  }
+
+  function chiqimQosh() {
+    const mahId = document.getElementById('chiqim-mah').value;
+    const miqdor = parseFloat(document.getElementById('chiqim-miqdor').value);
+    const narx = parseFloat(document.getElementById('chiqim-narx').value) || 0;
+    const sana = document.getElementById('chiqim-sana').value;
+    const izoh = document.getElementById('chiqim-izoh').value.trim();
+    if (!mahId) { showAlert('chiqim-alert', 'Mahsulot tanlang!', 'error'); return; }
+    if (!miqdor || miqdor <= 0) { showAlert('chiqim-alert', 'Miqdor kiriting!', 'error'); return; }
+    const mah = mahsulotlar.find(m => m.id == mahId);
+    const { unit, mult } = getUnitKg(mah, 'chiqim');
+    const kgMiqdor = miqdor * mult;
+    if (mah.qoldiq < kgMiqdor) { showAlert('chiqim-alert', `Omborda yetarli yo'q! Qoldiq: ${fmt(mah.qoldiq, mah)}`, 'error'); return; }
+    mah.qoldiq -= kgMiqdor;
+    save('mahsulotlar', mahsulotlar);
+    loglar.unshift({ id: Date.now(), mahId: mah.id, mahNom: mah.nom, tur: 'chiqish', miqdor, unit, kgMiqdor, narx, sana, izoh });
+    save('loglar', loglar);
+    document.getElementById('chiqim-miqdor').value = '';
+    document.getElementById('chiqim-narx').value = '';
+    document.getElementById('chiqim-izoh').value = '';
+    showAlert('chiqim-alert', `${miqdor} ${unit} sotildi | ${fmtSum(narx)} so'm ✅`, 'success');
+    renderBosh();
+  }
+
+  function setPeriod(p, btn) {
+    currentPeriod = p;
+    document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderFoyda();
+  }
+
+  function filterByPeriod(logs) {
+    if (currentPeriod === 'barchasi') return logs;
+    const now = new Date();
+    return logs.filter(l => {
+      if (!l.sana) return false;
+      const d = new Date(l.sana);
+      if (currentPeriod === 'bugun') return d.toDateString() === now.toDateString();
+      if (currentPeriod === 'hafta') return (now - d) / (1000*60*60*24) <= 7;
+      if (currentPeriod === 'oy') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      return true;
+    });
+  }
+
+  function renderFoyda() {
+    const filtered = filterByPeriod(loglar);
+    const xarajat = filtered.filter(l => l.tur === 'kirish').reduce((s, l) => s + (l.narx || 0), 0);
+    const tushum = filtered.filter(l => l.tur === 'chiqish').reduce((s, l) => s + (l.narx || 0), 0);
+    const foyda = tushum - xarajat;
+
+    document.getElementById('f-xarajat').textContent = fmtSum(xarajat) + ' so'm';
+    document.getElementById('f-tushum').textContent = fmtSum(tushum) + ' so'm';
+    const fEl = document.getElementById('f-foyda');
+    const fLabel = document.getElementById('f-foyda-label');
+    fEl.textContent = (foyda < 0 ? '-' : '+') + fmtSum(Math.abs(foyda)) + ' so'm';
+    if (foyda > 0) { fEl.className = 'stat-value profit'; fLabel.textContent = '✅ Foyda'; }
+    else if (foyda < 0) { fEl.className = 'stat-value loss'; fLabel.textContent = '❌ Zarar (minus)'; }
+    else { fEl.className = 'stat-value'; fLabel.textContent = 'Foyda / Zarar'; }
+
+    const prog = document.getElementById('f-progress');
+    if (tushum > 0 || xarajat > 0) {
+      const max = Math.max(tushum, xarajat);
+      prog.style.width = Math.min(100, (tushum / max) * 100) + '%';
+      prog.style.background = foyda >= 0 ? 'var(--success)' : 'var(--danger)';
+    }
+
+    const mahEl = document.getElementById('mah-foyda-list');
+    if (!mahsulotlar.length) {
+      mahEl.innerHTML = '<div class="empty-state"><div class="icon">📊</div>Hali ma'lumot yo'q</div>';
+      return;
+    }
+    mahEl.innerHTML = mahsulotlar.map(mah => {
+      const mahLogs = filtered.filter(l => l.mahId === mah.id);
+      const mx = mahLogs.filter(l => l.tur === 'kirish').reduce((s, l) => s + (l.narx || 0), 0);
+      const mt = mahLogs.filter(l => l.tur === 'chiqish').reduce((s, l) => s + (l.narx || 0), 0);
+      const mf = mt - mx;
+      const bc = mf > 0 ? 'plus' : mf < 0 ? 'minus' : 'zero';
+      return `
+        <div class="mah-foyda-item">
+          <div class="mah-foyda-header">
+            <div>
+              <div class="product-name">${mah.nom}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Qoldiq: ${fmt(mah.qoldiq, mah)}</div>
+            </div>
+            <div class="foyda-badge ${bc}">${mf >= 0 ? '+' : ''}${fmtSum(mf)} so'm</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px">
+            <span style="color:var(--muted)">Xarajat: <span style="color:var(--warning)">${fmtSum(mx)}</span></span>
+            <span style="color:var(--muted)">Tushum: <span style="color:var(--success)">${fmtSum(mt)}</span></span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderBosh() {
+    document.getElementById('stat-mahsulot').textContent = mahsulotlar.length;
+    document.getElementById('stat-operatsiya').textContent = loglar.length;
+    const xarajat = loglar.filter(l => l.tur === 'kirish').reduce((s, l) => s + (l.narx || 0), 0);
+    const tushum = loglar.filter(l => l.tur === 'chiqish').reduce((s, l) => s + (l.narx || 0), 0);
+    const foyda = tushum - xarajat;
+    document.getElementById('stat-xarajat').textContent = fmtSum(xarajat) + ' so'm';
+    document.getElementById('stat-tushum').textContent = fmtSum(tushum) + ' so'm';
+    const fEl = document.getElementById('stat-foyda');
+    const fLabel = document.getElementById('stat-foyda-label');
+    fEl.textContent = (foyda < 0 ? '-' : '+') + fmtSum(Math.abs(foyda)) + ' so'm';
+    if (foyda > 0) { fEl.className = 'stat-value profit'; fLabel.textContent = '✅ Umumiy foyda'; }
+    else if (foyda < 0) { fEl.className = 'stat-value loss'; fLabel.textContent = '❌ Zarar (minus)'; }
+    else { fEl.className = 'stat-value'; fLabel.textContent = 'Foyda / Zarar'; }
+
+    const prog = document.getElementById('bosh-progress');
+    if (tushum > 0 || xarajat > 0) {
+      const max = Math.max(tushum, xarajat);
+      prog.style.width = Math.min(100, (tushum / max) * 100) + '%';
+      prog.style.background = foyda >= 0 ? 'var(--success)' : 'var(--danger)';
+    }
+
+    const el = document.getElementById('bosh-qoldiq-list');
+    if (!mahsulotlar.length) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">🌿</div>Hali mahsulot yo'q</div>';
+      return;
+    }
+    el.innerHTML = mahsulotlar.map(m => `
+      <div class="product-item">
+        <div class="product-header">
+          <div class="product-name">${m.nom}</div>
+          <div class="stock-badge ${m.qoldiq < 50 ? 'low' : ''}">${fmt(m.qoldiq, m)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderMahsulotlar() {
+    const el = document.getElementById('mahsulot-list');
+    if (!mahsulotlar.length) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">📭</div>Hali mahsulot yo'q</div>';
+      return;
+    }
+    el.innerHTML = mahsulotlar.map(m => `
+      <div class="product-item">
+        <div class="product-header">
+          <div>
+            <div class="product-name">${m.nom}</div>
+            <div class="product-stock">${m.unit === 'ikki' ? 'kg + qop' : m.unit}${m.qopKg ? ' · 1 qop=' + m.qopKg + 'kg' : ''}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="stock-badge ${m.qoldiq < 50 ? 'low' : ''}">${fmt(m.qoldiq, m)}</div>
+            <button class="btn btn-danger" style="margin-top:6px" onclick="mahsulotOchir(${m.id})">🗑</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderLog() {
+    const el = document.getElementById('log-list');
+    let filtered = currentFilter === 'hammasi' ? loglar : loglar.filter(l => l.tur === currentFilter);
+    if (!filtered.length) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">📋</div>Hali operatsiya yo'q</div>';
+      return;
+    }
+    el.innerHTML = filtered.map(l => `
+      <div class="log-item ${l.tur}">
+        <div class="log-type ${l.tur}">${l.tur === 'kirish' ? '⬇ KIRIM' : '⬆ SOTISH'}</div>
+        <div class="log-detail">${l.mahNom} — ${l.miqdor} ${l.unit}</div>
+        ${l.narx ? `<div class="log-price">💰 ${fmtSum(l.narx)} so'm</div>` : ''}
+        ${l.izoh ? `<div class="log-date">📝 ${l.izoh}</div>` : ''}
+        <div class="log-date">📅 ${l.sana}</div>
+      </div>
+    `).join('');
+  }
+
+  function filterLog(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderLog();
+  }
+
+  function fillSelect(selId) {
+    const sel = document.getElementById(selId);
+    const val = sel.value;
+    sel.innerHTML = '<option value="">— Tanlang —</option>';
+    mahsulotlar.forEach(m => {
+      sel.innerHTML += `<option value="${m.id}" ${m.id == val ? 'selected' : ''}>${m.nom}</option>`;
+    });
+  }
+
+  function showAlert(id, msg, type) {
+    const el = document.getElementById(id);
+    el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    setTimeout(() => { el.innerHTML = ''; }, 3000);
+  }
+
+  renderBosh();
+  setToday('kirim-sana');
+  setToday('chiqim-sana');
+</script>
+</body>
+</html>
