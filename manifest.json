@@ -1,0 +1,11 @@
+{
+  "name": "Yem Dokon Premium",
+  "short_name": "YemDokon",
+  "start_url": "Yemdokon.html",
+  "display": "standalone",
+  "background_color": "#0a0f0d",
+  "theme_color": "#d4ff3d",
+  "icons": [
+    { "src": "https://cdn-icons-png.flaticon.com/512/3014/3014010.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

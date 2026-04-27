@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Yem Do'kon Tizimi</title>
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<script>
+  if('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log("SW error:", err));
+  }
+</script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Unbounded:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f0d;
+    --surface: #141d1a;
+    --surface2: #1e2925;
+    --accent: #d4ff3d;
+    --accent-gold: #c5a059;
+    --text: #e0e7e1;
+    --muted: #7a8c85;
+    --danger: #ff5f5f;
+    --success: #00ff9d;
+    --border: #26332e;
+    --grad: linear-gradient(135deg, #d4ff3d 0%, #8faf1a 100%);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { 
+    background: var(--bg); 
+    color: var(--text); 
+    font-family: 'IBM Plex Mono', monospace; 
+    font-size: 14px; 
+    line-height: 1.6;
+    padding-bottom: 90px;
+    min-height: 100vh;
+  }
+
+  header { 
+    background: var(--surface); 
+    border-bottom: 1px solid var(--border); 
+    padding: 20px 16px; 
+    position: sticky; 
+    top: 0; 
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  header h1 { 
+    font-family: 'Unbounded', sans-serif; 
+    font-size: 18px; 
+    background: var(--grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+  }
+
+  .tabs { 
+    display: flex; 
+    background: var(--surface); 
+    border-bottom: 1px solid var(--border); 
+    overflow-x: auto; 
+    padding: 0 8px;
+    gap: 4px;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab { 
+    flex: 1; 
+    min-width: 75px; 
+    padding: 14px 4px; 
+    text-align: center; 
+    font-size: 9px; 
+    color: var(--muted); 
+    cursor: pointer; 
+    border: none; 
+    background: none; 
+    font-family: 'IBM Plex Mono', monospace; 
+    transition: 0.3s;
+    border-bottom: 3px solid transparent;
+  }
+
+  .tab.active { 
+    color: var(--accent); 
+    border-bottom-color: var(--accent); 
+    background: linear-gradient(to top, rgba(212, 255, 61, 0.05), transparent);
+  }
+
+  .tab-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+
+  .page { display: none; padding: 16px; animation: fadeIn 0.3s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card { 
+    background: var(--surface); 
+    border: 1px solid var(--border); 
+    border-radius: 16px; 
+    padding: 18px; 
+    margin-bottom: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  }
+
+  .card-title { 
+    font-family: 'Unbounded', sans-serif; 
+    font-size: 10px; 
+    color: var(--accent-gold); 
+    text-transform: uppercase; 
+    margin-bottom: 15px; 
+    letter-spacing: 1px;
+  }
+
+  input, select { 
+    width: 100%; 
+    background: var(--surface2); 
+    border: 1px solid var(--border); 
+    border-radius: 12px; 
+    color: var(--text); 
+    padding: 14px; 
+    font-family: 'IBM Plex Mono', monospace; 
+    margin-bottom: 12px; 
+    outline: none;
+    font-size: 14px;
+  }
+
+  input:focus { border-color: var(--accent); }
+
+  .btn { 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%; 
+    padding: 16px; 
+    border: none; 
+    border-radius: 12px; 
+    font-family: 'Unbounded', sans-serif; 
+    font-size: 11px; 
+    font-weight: 700;
+    cursor: pointer; 
+    transition: 0.2s;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .btn-primary { background: var(--grad); color: #000; }
+  .btn-excel { background: #1d352f; color: var(--success); border: 1px solid var(--success); }
+  .btn-outline { background: transparent; color: var(--accent-gold); border: 1px solid var(--accent-gold); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 6px 12px; font-size: 9px; width: auto; }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 16px; text-align: center; }
+  .stat-card.full { grid-column: 1 / -1; }
+  .stat-value { font-family: 'Unbounded', sans-serif; font-size: 18px; color: var(--accent); }
+  .stat-label { font-size: 9px; color: var(--muted); text-transform: uppercase; margin-top: 4px; }
+
+  .product-item { 
+    background: var(--surface2); 
+    border: 1px solid var(--border); 
+    border-radius: 12px; 
+    padding: 14px; 
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .log-item { 
+    border-radius: 12px;
+    padding: 14px; 
+    margin-bottom: 10px; 
+    background: var(--surface2); 
+    border: 1px solid var(--border);
+  }
+  .log-item.k { border-left: 4px solid var(--success); }
+  .log-item.s { border-left: 4px solid var(--danger); }
+  .log-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .empty-state { text-align: center; color: var(--muted); padding: 40px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌾 YEM-XASHAK</h1>
+  <div id="status-dot" style="width:8px; height:8px; background:var(--success); border-radius:50%"></div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('bosh', this)"><span class="tab-icon">📊</span>Bosh</button>
+  <button class="tab" onclick="showTab('tovar', this)"><span class="tab-icon">📦</span>Tovar</button>
+  <button class="tab" onclick="showTab('kirim', this)"><span class="tab-icon">⬇️</span>Kirim</button>
+  <button class="tab" onclick="showTab('sotish', this)"><span class="tab-icon">⬆️</span>Sotish</button>
+  <button class="tab" onclick="showTab('tarix', this)"><span class="tab-icon">📋</span>Tarix</button>
+  <button class="tab" onclick="showTab('sozlar', this)"><span class="tab-icon">⚙️</span>Zaxira</button>
+</div>
+
+<div id="tab-bosh" class="page active">
+  <div class="stats-grid" id="stats-container"></div>
+  <div class="card">
+    <div class="card-title">📦 Ombor holati</div>
+    <div id="bosh-qoldiq"></div>
+  </div>
+</div>
+
+<div id="tab-tovar" class="page">
+  <div class="card">
+    <div class="card-title">➕ Yangi tur qo'shish</div>
+    <input type="text" id="m-nom" placeholder="Masalan: Arpa">
+    <select id="m-u">
+      <option value="kg">O'lchov: KG</option>
+      <option value="qop">O'lchov: QOP</option>
+    </select>
+    <button class="btn btn-primary" onclick="addM()">QO'SHISH</button>
+  </div>
+  <div id="m-list"></div>
+</div>
+
+<div id="tab-kirim" class="page">
+  <div class="card">
+    <div class="card-title">⬇️ Xaridni qayd etish</div>
+    <select id="k-m"></select>
+    <input type="number" id="k-q" placeholder="Miqdori">
+    <input type="number" id="k-n" placeholder="Jami xarid summasi">
+    <input type="date" id="k-d">
+    <button class="btn btn-primary" onclick="doK()">SAQLASH</button>
+  </div>
+</div>
+
+<div id="tab-sotish" class="page">
+  <div class="card">
+    <div class="card-title">⬆️ Sotuvni qayd etish</div>
+    <select id="s-m"></select>
+    <input type="number" id="s-q" placeholder="Sotuv miqdori">
+    <input type="number" id="s-n" placeholder="Sotuv summasi">
+    <input type="date" id="s-d">
+    <button class="btn btn-primary" onclick="doS()">SOTISHNI YAKUNLASH</button>
+  </div>
+</div>
+
+<div id="tab-tarix" class="page">
+  <div class="card-title">📋 Oxirgi operatsiyalar</div>
+  <div id="l-list"></div>
+</div>
+
+<div id="tab-sozlar" class="page">
+  <div class="card">
+    <div class="card-title">💾 Ma'lumotlarni boshqarish</div>
+    <button class="btn btn-excel" onclick="expExcel()">📊 EXCELGA YUKLASH (CSV)</button>
+    <button class="btn btn-outline" onclick="expJSON()">📂 ZAXIRA NUSXA OLISH (JSON)</button>
+    <hr style="margin:20px 0; border:0; border-top:1px solid var(--border)">
+    <input type="file" id="imp-f" style="display:none" onchange="impJSON(event)">
+    <button class="btn" style="background:var(--surface2); color:var(--text)" onclick="document.getElementById('imp-f').click()">📥 ZAXIRADAN TIKLASH</button>
+  </div>
+</div>
+
+<script>
+  let DB = JSON.parse(localStorage.getItem('yem_v4')) || { m: [], l: [] };
+  const save = () => localStorage.setItem('yem_v4', JSON.stringify(DB));
+
+  function showTab(id, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+    renderAll();
+  }
+
+  function addM() {
+    const n = document.getElementById('m-nom').value.trim();
+    const u = document.getElementById('m-u').value;
+    if(!n) return;
+    DB.m.push({ id: Date.now(), n, u, qoldiq: 0 });
+    save(); document.getElementById('m-nom').value = ''; renderAll();
+  }
+
+  function doK() {
+    const id = document.getElementById('k-m').value;
+    const q = parseFloat(document.getElementById('k-q').value);
+    const n = parseFloat(document.getElementById('k-n').value) || 0;
+    const d = document.getElementById('k-d').value;
+    if(!id || !q) return;
+    const m = DB.m.find(x => x.id == id);
+    m.qoldiq += q;
+    DB.l.unshift({ t: 'k', m: m.n, q, n, d });
+    save(); alert('Kirim qilindi'); showTab('bosh', document.querySelector('.tab'));
+  }
+
+  function doS() {
+    const id = document.getElementById('s-m').value;
+    const q = parseFloat(document.getElementById('s-q').value);
+    const n = parseFloat(document.getElementById('s-n').value) || 0;
+    const d = document.getElementById('s-d').value;
+    if(!id || !q) return;
+    const m = DB.m.find(x => x.id == id);
+    if(m.qoldiq < q) return alert('Omborda yetarli emas!');
+    m.qoldiq -= q;
+    DB.l.unshift({ t: 's', m: m.n, q, n, d });
+    save(); alert('Sotildi'); showTab('bosh', document.querySelector('.tab'));
+  }
+
+  function expExcel() {
+    let c = "﻿Turi,Mahsulot,Miqdori,Summasi,Sana\n";
+    DB.l.forEach(x => c += `${x.t=='k'?'Kirim':'Sotuv'},${x.m},${x.q},${x.n},${x.d}\n`);
+    const b = new Blob([c], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='hisobot.csv'; a.click();
+  }
+
+  function expJSON() {
+    const b = new Blob([JSON.stringify(DB)], {type:'application/json'});
+    const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='yem_zaxira.json'; a.click();
+  }
+
+  function impJSON(e) {
+    const r = new FileReader();
+    r.onload = (x) => {
+      if(confirm('Eski ma\'lumotlar o\'chadi. Rozimisiz?')) {
+        DB = JSON.parse(x.target.result); save(); location.reload();
+      }
+    };
+    r.readAsText(e.target.files[0]);
+  }
+
+  function renderAll() {
+    // Stats
+    const kSum = DB.l.filter(x=>x.t=='k').reduce((a,b)=>a+b.n,0);
+    const sSum = DB.l.filter(x=>x.t=='s').reduce((a,b)=>a+b.n,0);
+    document.getElementById('stats-container').innerHTML = `
+      <div class="stat-card"><div class="stat-value">${DB.m.length}</div><div class="stat-label">Turlar</div></div>
+      <div class="stat-card"><div class="stat-value">${DB.l.length}</div><div class="stat-label">Amallar</div></div>
+      <div class="stat-card full"><div class="stat-value" style="color:var(--success)">${(sSum - kSum).toLocaleString()} so'm</div><div class="stat-label">Sof Foyda</div></div>
+    `;
+    // Selects
+    const opt = '<option value="">— Tanlang —</option>' + DB.m.map(x=>`<option value="${x.id}">${x.n}</option>`).join('');
+    document.getElementById('k-m').innerHTML = opt;
+    document.getElementById('s-m').innerHTML = opt;
+    document.getElementById('k-d').valueAsDate = new Date();
+    document.getElementById('s-d').valueAsDate = new Date();
+    // Lists
+    document.getElementById('bosh-qoldiq').innerHTML = DB.m.map(x=>`<div class="product-item"><span>${x.n}</span><b>${x.qoldiq} ${x.u}</b></div>`).join('') || '<p class="empty-state">Bo\'sh</p>';
+    document.getElementById('m-list').innerHTML = DB.m.map(x=>`<div class="product-item"><span>${x.n} (${x.u})</span><button class="btn-danger" onclick="delM(${x.id})">O'chirish</button></div>`).join('');
+    document.getElementById('l-list').innerHTML = DB.l.map(x=>`
+      <div class="log-item ${x.t}">
+        <div style="display:flex; justify-content:space-between"><b>${x.m}</b> <span>${x.t=='k'?'+':'-'}${x.q}</span></div>
+        <div class="log-meta"><span>${x.n.toLocaleString()} so'm</span> <span>${x.d}</span></div>
+      </div>
+    `).join('') || '<p class="empty-state">Tarix bo\'sh</p>';
+  }
+  
+  function delM(id) { if(confirm('Ochirish?')) { DB.m = DB.m.filter(x=>x.id!=id); save(); renderAll(); } }
+
+  window.onload = renderAll;
+</script>
+</body>
+</html>
