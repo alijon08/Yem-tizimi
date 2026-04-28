@@ -6,6 +6,6 @@
   "background_color": "#0a0f0d",
   "theme_color": "#d4ff3d",
  "icons": [
-  { "src": "animal_feed_app_icon.png", "sizes": "512x512", "type": "image/png" }
+  { "src": "animal_feed_app_icon.png", "sizes": "1024x1024", "type": "image/png" }
 ]
 }
